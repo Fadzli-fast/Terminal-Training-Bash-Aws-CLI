@@ -1,4 +1,3 @@
-cat > README.md << 'EOF'
 # Terminal Training
 
 A web-based terminal application designed for training environments, perfect for students to learn Linux commands and deploy applications like Tyk Gateway on AWS EC2.
