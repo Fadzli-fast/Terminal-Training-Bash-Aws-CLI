@@ -19,11 +19,16 @@ wss.on('connection', (ws) => {
   const shell = os.platform() === 'win32' ? 'powershell.exe' : process.env.SHELL || 'bash';
   
   const ptyProcess = pty.spawn(shell, [], {
-    name: 'xterm-color',
+    name: 'xterm-256color',
     cols: 120,
     rows: 30,
     cwd: process.env.HOME,
-    env: process.env,
+    env: { 
+      ...process.env, 
+      TERM: 'xterm-256color',
+      COLORTERM: 'truecolor',
+      FORCE_COLOR: '1'
+    },
   });
 
   const send = (data) => {

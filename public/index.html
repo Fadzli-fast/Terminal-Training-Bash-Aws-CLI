@@ -4,103 +4,210 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Instant Terminal</title>
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+    <!-- xterm.css is REQUIRED to avoid weird cursor/scroll bugs -->
+    <link rel="stylesheet" href="/node_modules/xterm/css/xterm.css" />
+
     <style>
-      :root {
-        color-scheme: dark;
-      }
-      html, body {
-        height: 100%;
-      }
+      :root { color-scheme: dark; }
+      html, body { height: 100%; }
       body {
         margin: 0;
         font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-        background: #0b0f1a;
+        background: #0b0f1a; /* page backdrop */
         color: #e6e9ef;
+      }
+
+      /* Fake course page so the floating terminal feels like the screenshot */
+      .page-wrapper {
+        min-height: 100%;
         display: grid;
         grid-template-rows: auto 1fr;
       }
-      header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 16px;
-        border-bottom: 1px solid #1c2333;
-        background: #0e1422;
-        position: sticky;
-        top: 0;
-        z-index: 1;
+      header.page {
+        display: flex; align-items: center; gap: 12px;
+        padding: 14px 20px; background: #0e1422; border-bottom: 1px solid #1c2333;
       }
-      .pill {
-        font-size: 12px;
-        padding: 4px 8px;
-        border: 1px solid #243049;
-        border-radius: 999px;
-        color: #9bb1d0;
+      .title { font-weight: 600; }
+      .pill { font-size: 12px; padding: 4px 8px; border: 1px solid #243049; border-radius: 999px; color: #9bb1d0; }
+      .content-area { position: relative; padding: 28px; }
+
+      /* Floating terminal window */
+      .terminal-window {
+        position: absolute;
+        right: 32px; top: 48px;
+        width: 760px; height: 460px; /* user can resize below */
+        display: grid; grid-template-rows: auto 1fr;
+        background: #0e1422; border: 1px solid #1c2333; border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0,0,0,.55);
+        overflow: hidden;
+        resize: both;
       }
-      #terminal {
-        height: 100%;
+      .tw-header {
+        display: flex; align-items: center; gap: 12px;
+        padding: 10px 12px; background: #0f172a; border-bottom: 1px solid #18213c;
+        cursor: default;
+      }
+      .tw-header .dots {
+        display: inline-flex; gap: 6px; margin-right: 6px;
+      }
+      .tw-header .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+      .dot.red { background: #f87171; }
+      .dot.yellow { background: #fbbf24; }
+      .dot.green { background: #34d399; }
+      .tw-title { font-size: 13px; color: #aab9d3; }
+      .tw-actions { margin-left: auto; display: flex; gap: 8px; }
+      .btn {
+        padding: 4px 8px; font-size: 12px; line-height: 1; cursor: pointer;
+        background: #18213c; color: #dbe8ff; border: 1px solid #243049; border-radius: 6px;
+      }
+      .btn.secondary { background: #223055; }
+
+      /* xterm host */
+      #terminal-host { background: #101826; }
+      #terminal { width: 100%; height: 100%; }
+
+      /* Helpful selection color inside terminal */
+      .xterm-selection { background-color: rgba(56, 139, 253, 0.28); }
+
+      /* Responsive: keep it visible on small screens */
+      @media (max-width: 820px) {
+        .terminal-window { left: 16px; right: 16px; width: auto; }
       }
     </style>
   </head>
   <body>
-    <header>
-      <strong>Instant Terminal</strong>
-      <span class="pill" id="status">connecting…</span>
-    </header>
-    <div id="terminal"></div>
+    <div class="page-wrapper">
+      <header class="page">
+        <div class="title">Introduction to AWS Identity and Access Management (IAM)</div>
+        <span class="pill">Guided Mode</span>
+        <span class="pill">Apprentice</span>
+      </header>
 
+      <div class="content-area">
+        <!-- Floating terminal like the screenshot -->
+        <section class="terminal-window" id="tw">
+          <div class="tw-header">
+            <span class="dots"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></span>
+            <span class="tw-title">ACloudGuru InstantTerminal</span>
+            <span class="pill" id="status" style="margin-left:8px;">connecting…</span>
+            <div class="tw-actions">
+              <button class="btn" id="autoScrollToggle">Auto‑scroll: ON</button>
+              <button class="btn secondary" id="scrollToBottom">↓ Bottom</button>
+            </div>
+          </div>
+          <div id="terminal-host">
+            <div id="terminal"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- xterm + fit addon (UMD) -->
     <script src="/node_modules/xterm/lib/xterm.js"></script>
     <script src="/node_modules/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
+
     <script>
+      // --- Terminal setup ---
       const term = new window.Terminal({
         cursorBlink: true,
+        scrollback: 2000,
         fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
-        theme: {
-          background: '#0b0f1a',
-          foreground: '#e6e9ef'
-        }
+        fontSize: 14,
+        theme: { background: '#101826', foreground: '#e6e9ef' }
       });
-      // xterm-addon-fit UMD exposes namespace FitAddon with class FitAddon
       const fitAddon = new window.FitAddon.FitAddon();
       term.loadAddon(fitAddon);
       term.open(document.getElementById('terminal'));
-      fitAddon.fit();
 
+      // Make sure fonts/css are ready before measuring for an accurate fit
+      const fitNow = () => { try { fitAddon.fit(); } catch(e){} };
+      document.fonts?.ready.then(fitNow);
+      setTimeout(fitNow, 120);
+
+      // Keep terminal sized with element changes
+      const host = document.getElementById('terminal-host');
+      new ResizeObserver(() => {
+        fitNow();
+        // inform backend of the new size
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'resize', data: { cols: term.cols, rows: term.rows } }));
+        }
+      }).observe(host);
+
+      // --- Connection (adjust the path to your backend) ---
       const statusEl = document.getElementById('status');
-      const wsBase = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.hostname + (location.port ? ':' + location.port : '');
+      const autoScrollBtn = document.getElementById('autoScrollToggle');
+      const scrollBottomBtn = document.getElementById('scrollToBottom');
+
       const params = new URLSearchParams(location.search);
       const mode = params.get('mode') === 'ssh' ? 'ssh' : 'tty';
-      const ws = new WebSocket(wsBase + '/' + mode);
-      ws.binaryType = 'arraybuffer';
+      const wsBase = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.hostname + (location.port ? ':' + location.port : '');
+      const wsUrl = `${wsBase}/${mode}`; // e.g. wss://your-host/ssh
 
-      ws.onopen = () => {
-        statusEl.textContent = 'connected';
-        // Send initial size
-        const { cols, rows } = term;
-        ws.send(JSON.stringify({ type: 'resize', data: { cols, rows } }));
-      };
-      ws.onclose = () => statusEl.textContent = 'disconnected';
-      ws.onerror = () => statusEl.textContent = 'error';
-      ws.onmessage = (ev) => {
-        const data = typeof ev.data === 'string' ? ev.data : new TextDecoder().decode(ev.data);
-        term.write(data);
-      };
+      let ws;
+      let autoScroll = true;
 
+      function connect() {
+        ws = new WebSocket(wsUrl);
+        ws.binaryType = 'arraybuffer';
+
+        ws.onopen = () => {
+          statusEl.textContent = 'connected';
+          ws.send(JSON.stringify({ type: 'resize', data: { cols: term.cols, rows: term.rows } }));
+          term.focus();
+        };
+        ws.onclose = () => { statusEl.textContent = 'disconnected'; };
+        ws.onerror = () => { statusEl.textContent = 'error'; };
+
+        ws.onmessage = (ev) => {
+          const data = typeof ev.data === 'string' ? ev.data : new TextDecoder().decode(ev.data);
+          term.write(data);
+          if (autoScroll) term.scrollToBottom();
+        };
+      }
+      connect();
+
+      // send keystrokes/raw data to backend
       term.onData(data => {
-        ws.send(JSON.stringify({ type: 'input', data }));
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'input', data }));
+        }
+        if (autoScroll) term.scrollToBottom();
       });
 
-      const onResize = () => {
-        fitAddon.fit();
-        ws.readyState === WebSocket.OPEN && ws.send(JSON.stringify({ type: 'resize', data: { cols: term.cols, rows: term.rows } }));
-      };
-      window.addEventListener('resize', onResize);
+      // Optional: when user scrolls up, pause auto-scroll until they jump back down
+      term.onScroll(() => {
+        const atBottom = term.buffer.active.baseY === term.buffer.active.cursorY || term.buffer.active.viewportY + term.rows >= term.buffer.active.baseY;
+        if (!atBottom) {
+          autoScroll = false; autoScrollBtn.textContent = 'Auto‑scroll: OFF'; autoScrollBtn.style.opacity = 0.85;
+        }
+      });
 
+      // UI buttons
+      autoScrollBtn.addEventListener('click', () => {
+        autoScroll = !autoScroll;
+        autoScrollBtn.textContent = autoScroll ? 'Auto‑scroll: ON' : 'Auto‑scroll: OFF';
+        if (autoScroll) term.scrollToBottom();
+      });
+      scrollBottomBtn.addEventListener('click', () => { autoScroll = true; autoScrollBtn.textContent = 'Auto‑scroll: ON'; term.scrollToBottom(); });
+
+      // Keyboard shortcuts (Ctrl+Home/End/Up/Down)
+      document.addEventListener('keydown', (e) => {
+        if (!e.ctrlKey) return;
+        if (e.key === 'Home') { e.preventDefault(); term.scrollToTop(); }
+        if (e.key === 'End')  { e.preventDefault(); term.scrollToBottom(); }
+        if (e.key === 'ArrowUp')   { e.preventDefault(); term.scrollLines(-1); }
+        if (e.key === 'ArrowDown') { e.preventDefault(); term.scrollLines(1); }
+      });
+
+      // Focus terminal when the window is clicked
+      document.getElementById('tw').addEventListener('mousedown', () => term.focus());
     </script>
   </body>
-  </html>
-
-
+</html>
