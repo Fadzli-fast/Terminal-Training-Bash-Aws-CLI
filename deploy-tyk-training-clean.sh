@@ -264,7 +264,7 @@ SRV_EOF
 
 # Download application files from GitHub
 git clone https://github.com/Fadzli-fast/Terminal-Training-Bash-Aws-CLI.git /tmp/tyk-training
-cp -r /tmp/tyk-training/public /tmp/tyk-training/server.js /tmp/tyk-training/package.json /var/lib/instant-terminal/
+cp -r /tmp/tyk-training/public /var/lib/instant-terminal/
 rm -rf /tmp/tyk-training
 
 # Set ownership
