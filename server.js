@@ -16,19 +16,27 @@ const wss = new Server({ server, path: '/tty' });
 wss.on('connection', (ws) => {
   console.log('New WebSocket connection established');
   
-  const shell = os.platform() === 'win32' ? 'powershell.exe' : process.env.SHELL || 'bash';
+  const shell = os.platform() === 'win32' ? 'powershell.exe' : 'sudo';
+  const shellArgs = os.platform() === 'win32' ? [] : ['-u', 'training', 'bash'];
+  console.log('Spawning shell:', shell, 'with args:', shellArgs);
   
-  const ptyProcess = pty.spawn(shell, [], {
+  const ptyProcess = pty.spawn(shell, shellArgs, {
     name: 'xterm-256color',
     cols: 120,
     rows: 30,
-    cwd: process.env.HOME,
+    cwd: '/home/ubuntu',
     env: { 
       ...process.env, 
       TERM: 'xterm-256color',
       COLORTERM: 'truecolor',
       FORCE_COLOR: '1'
     },
+  });
+  
+  console.log('PTY process spawned with PID:', ptyProcess.pid);
+
+  ptyProcess.onExit((code, signal) => {
+    console.log('PTY process exited with code:', code, 'signal:', signal);
   });
 
   const send = (data) => {
