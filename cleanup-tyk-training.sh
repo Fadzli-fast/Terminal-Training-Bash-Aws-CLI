@@ -137,21 +137,69 @@ else
 fi
 
 # Delete VPC
-print_status "Deleting VPC..."
-VPC_ID=$(aws ec2 describe-vpcs \
+# Delete all VPCs created by the deploy script
+print_status "Finding and deleting VPCs..."
+VPC_IDS=$(aws ec2 describe-vpcs \
     --filters "Name=tag:Name,Values=tyk-training-vpc" \
     --region "$REGION" \
-    --query 'Vpcs[0].VpcId' \
+    --query 'Vpcs[].VpcId' \
     --output text 2>/dev/null || echo "")
 
-if [ -n "$VPC_ID" ] && [ "$VPC_ID" != "None" ]; then
-    print_status "Deleting VPC: $VPC_ID"
-    aws ec2 delete-vpc \
-        --vpc-id "$VPC_ID" \
-        --region "$REGION"
-    print_status "VPC deleted"
+if [ -n "$VPC_IDS" ] && [ "$VPC_IDS" != "None" ]; then
+    for VPC_ID in $VPC_IDS; do
+        print_status "Cleaning up VPC: $VPC_ID"
+        
+        # Delete subnets
+        SUBNET_IDS=$(aws ec2 describe-subnets \
+            --filters "Name=vpc-id,Values=$VPC_ID" \
+            --region "$REGION" \
+            --query 'Subnets[].SubnetId' \
+            --output text 2>/dev/null || echo "")
+        
+        if [ -n "$SUBNET_IDS" ]; then
+            for SUBNET_ID in $SUBNET_IDS; do
+                print_status "Deleting subnet: $SUBNET_ID"
+                aws ec2 delete-subnet --subnet-id "$SUBNET_ID" --region "$REGION" 2>/dev/null || true
+            done
+        fi
+        
+        # Delete route tables (except main)
+        ROUTE_TABLE_IDS=$(aws ec2 describe-route-tables \
+            --filters "Name=vpc-id,Values=$VPC_ID" \
+            --region "$REGION" \
+            --query 'RouteTables[?Associations[0].Main!=`true`].RouteTableId' \
+            --output text 2>/dev/null || echo "")
+        
+        if [ -n "$ROUTE_TABLE_IDS" ]; then
+            for RT_ID in $ROUTE_TABLE_IDS; do
+                print_status "Deleting route table: $RT_ID"
+                aws ec2 delete-route-table --route-table-id "$RT_ID" --region "$REGION" 2>/dev/null || true
+            done
+        fi
+        
+        # Detach and delete internet gateways
+        IGW_IDS=$(aws ec2 describe-internet-gateways \
+            --filters "Name=attachment.vpc-id,Values=$VPC_ID" \
+            --region "$REGION" \
+            --query 'InternetGateways[].InternetGatewayId' \
+            --output text 2>/dev/null || echo "")
+        
+        if [ -n "$IGW_IDS" ]; then
+            for IGW_ID in $IGW_IDS; do
+                print_status "Detaching internet gateway: $IGW_ID"
+                aws ec2 detach-internet-gateway --internet-gateway-id "$IGW_ID" --vpc-id "$VPC_ID" --region "$REGION" 2>/dev/null || true
+                print_status "Deleting internet gateway: $IGW_ID"
+                aws ec2 delete-internet-gateway --internet-gateway-id "$IGW_ID" --region "$REGION" 2>/dev/null || true
+            done
+        fi
+        
+        # Delete VPC
+        print_status "Deleting VPC: $VPC_ID"
+        aws ec2 delete-vpc --vpc-id "$VPC_ID" --region "$REGION" 2>/dev/null || true
+    done
+    print_status "All VPCs deleted"
 else
-    print_warning "No VPC found to delete"
+    print_warning "No VPCs found to delete"
 fi
 
 print_status "🎉 Cleanup completed successfully!"
