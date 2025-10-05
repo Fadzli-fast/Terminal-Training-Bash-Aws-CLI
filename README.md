@@ -26,7 +26,7 @@ A web-based terminal application designed for training environments, perfect for
 Edit the configuration in `deploy-tyk-training-clean.sh`:
 ```bash
 REGION="ap-southeast-1"                    # Your preferred AWS region
-KEY_PAIR_NAME="tyk_training_instance"      # Your existing EC2 key pair
+KEY_PAIR_NAME=""      # Your existing EC2 key pair
 INSTANCE_TYPE="t3.medium"                  # EC2 instance type
 INSTANCE_COUNT=3                           # Number of instances (1-10)
 ```
@@ -43,7 +43,7 @@ chmod +x deploy-tyk-training-clean.sh
 ### 3. Access Training Environment
 - Wait 2-3 minutes for full deployment
 - Open browser to any of the provided URLs
-- Login with: `training_user` / `training123`
+- Login with: 
 - Terminal automatically logs in as `training` user
 
 ## Configuration Options
