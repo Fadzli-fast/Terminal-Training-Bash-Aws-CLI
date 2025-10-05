@@ -352,8 +352,8 @@ systemctl enable instant-terminal
 systemctl start instant-terminal
 systemctl restart nginx
 
-# Create local Kubernetes cluster with kind
-su - ubuntu -c "kind create cluster --name tyk-training --config - << 'EOF'
+# Create kind cluster config file
+cat > /tmp/kind-config.yaml << 'KIND_EOF'
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
@@ -371,21 +371,26 @@ nodes:
   - containerPort: 443
     hostPort: 8443
     protocol: TCP
-EOF
-"
+KIND_EOF
+
+# Create local Kubernetes cluster with kind (as ubuntu user)
+runuser -l ubuntu -c "kind create cluster --name tyk-training --config /tmp/kind-config.yaml"
 
 # Copy kubeconfig to training user
 mkdir -p /home/training/.kube
 cp /home/ubuntu/.kube/config /home/training/.kube/config
 chown -R training:training /home/training/.kube
 
-# Add Tyk Helm repository
-su - ubuntu -c "helm repo add tyk-helm https://helm.tyk.io/public/helm/charts/"
-su - ubuntu -c "helm repo update"
+# Add Tyk Helm repository (as ubuntu user)
+runuser -l ubuntu -c "helm repo add tyk-helm https://helm.tyk.io/public/helm/charts/"
+runuser -l ubuntu -c "helm repo update"
 
-# Install NGINX Ingress Controller for Tyk
-su - ubuntu -c "kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml"
-su - ubuntu -c "kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s"
+# Install NGINX Ingress Controller for Tyk (as ubuntu user)
+runuser -l ubuntu -c "kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml"
+runuser -l ubuntu -c "kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s"
+
+# Clean up
+rm /tmp/kind-config.yaml
 
 # Configure firewall
 ufw allow 22/tcp || true
