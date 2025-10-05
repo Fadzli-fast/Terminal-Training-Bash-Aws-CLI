@@ -224,7 +224,6 @@ apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 systemctl start docker
 systemctl enable docker
 usermod -aG docker ubuntu
-usermod -aG docker training
 
 # Install kubectl
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
@@ -246,6 +245,7 @@ apt-get install helm
 # Create training user
 useradd -m -s /bin/bash training
 echo "training:training123" | chpasswd
+usermod -aG docker training
 
 # Configure sudo for training user
 echo "ubuntu ALL=(training) NOPASSWD: /bin/bash" | tee /etc/sudoers.d/training
