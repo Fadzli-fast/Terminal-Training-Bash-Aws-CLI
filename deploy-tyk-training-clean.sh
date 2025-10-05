@@ -206,55 +206,55 @@ USER_DATA=$(cat << 'EOF'
 #!/bin/bash
 set -ex
 apt-get update
-sudo apt-get install gnupg curl -y && sudo apt install net-tools -y
+apt-get install -y gnupg curl net-tools
 
 # Install Node.js and dependencies
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash -
-sudo apt-get install -y nodejs build-essential python3-dev nginx apache2-utils ufw
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt-get install -y nodejs build-essential python3-dev nginx apache2-utils ufw
 
 # Install Docker (required for Kubernetes)
-sudo apt-get update
-sudo apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt-get update
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+apt-get update
+apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+apt-get update
+apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
 # Start and enable Docker
-sudo systemctl start docker
-sudo systemctl enable docker
-sudo usermod -aG docker ubuntu
-sudo usermod -aG docker training
+systemctl start docker
+systemctl enable docker
+usermod -aG docker ubuntu
+usermod -aG docker training
 
 # Install kubectl
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 rm kubectl
 
 # Install kind (Kubernetes in Docker) for local K8s cluster
 curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
 chmod +x ./kind
-sudo mv ./kind /usr/local/bin/kind
+mv ./kind /usr/local/bin/kind
 
 # Install Helm
-curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
-sudo apt-get install apt-transport-https --yes
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
-sudo apt-get update
-sudo apt-get install helm
+curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | tee /usr/share/keyrings/helm.gpg > /dev/null
+apt-get install apt-transport-https --yes
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list
+apt-get update
+apt-get install helm
 
 # Create training user
-sudo useradd -m -s /bin/bash training
-echo "training:training123" | sudo chpasswd
+useradd -m -s /bin/bash training
+echo "training:training123" | chpasswd
 
 # Configure sudo for training user
-echo "ubuntu ALL=(training) NOPASSWD: /bin/bash" | sudo tee /etc/sudoers.d/training
-echo "training ALL=(ALL) NOPASSWD: /usr/bin/apt-get, /usr/bin/apt, /usr/bin/systemctl, /usr/bin/curl, /usr/bin/wget, /usr/bin/git, /usr/bin/npm, /usr/bin/node, /usr/bin/htop, /usr/bin/ss, /usr/bin/lsof, /usr/bin/tail, /usr/bin/head, /usr/bin/cat, /usr/bin/grep, /usr/bin/find, /usr/bin/ls, /usr/bin/mkdir, /usr/bin/rmdir, /usr/bin/touch, /usr/bin/cp, /usr/bin/mv, /usr/bin/rm, /usr/bin/chmod, /usr/bin/chown, /usr/bin/ln, /usr/bin/tar, /usr/bin/gzip, /usr/bin/zip, /usr/bin/unzip, /usr/bin/nano, /usr/bin/vim, /usr/bin/vi, /usr/bin/less, /usr/bin/more, /usr/bin/echo, /usr/bin/printf, /usr/bin/date, /usr/bin/uptime, /usr/bin/whoami, /usr/bin/id, /usr/bin/env, /usr/bin/which, /usr/bin/whereis, /usr/bin/locate, /usr/bin/updatedb, /usr/local/bin/kubectl, /usr/local/bin/helm, /usr/local/bin/kind, /usr/bin/docker" | sudo tee -a /etc/sudoers.d/training
-sudo chmod 0440 /etc/sudoers.d/training
+echo "ubuntu ALL=(training) NOPASSWD: /bin/bash" | tee /etc/sudoers.d/training
+echo "training ALL=(ALL) NOPASSWD: /usr/bin/apt-get, /usr/bin/apt, /usr/bin/systemctl, /usr/bin/curl, /usr/bin/wget, /usr/bin/git, /usr/bin/npm, /usr/bin/node, /usr/bin/htop, /usr/bin/ss, /usr/bin/lsof, /usr/bin/tail, /usr/bin/head, /usr/bin/cat, /usr/bin/grep, /usr/bin/find, /usr/bin/ls, /usr/bin/mkdir, /usr/bin/rmdir, /usr/bin/touch, /usr/bin/cp, /usr/bin/mv, /usr/bin/rm, /usr/bin/chmod, /usr/bin/chown, /usr/bin/ln, /usr/bin/tar, /usr/bin/gzip, /usr/bin/zip, /usr/bin/unzip, /usr/bin/nano, /usr/bin/vim, /usr/bin/vi, /usr/bin/less, /usr/bin/more, /usr/bin/echo, /usr/bin/printf, /usr/bin/date, /usr/bin/uptime, /usr/bin/whoami, /usr/bin/id, /usr/bin/env, /usr/bin/which, /usr/bin/whereis, /usr/bin/locate, /usr/bin/updatedb, /usr/local/bin/kubectl, /usr/local/bin/helm, /usr/local/bin/kind, /usr/bin/docker" | tee -a /etc/sudoers.d/training
+chmod 0440 /etc/sudoers.d/training
 
 # Create application directory
-sudo mkdir -p /var/lib/instant-terminal
-sudo chown ubuntu:ubuntu /var/lib/instant-terminal
+mkdir -p /var/lib/instant-terminal
+chown ubuntu:ubuntu /var/lib/instant-terminal
 cd /var/lib/instant-terminal
 
 # Create package.json
@@ -299,7 +299,7 @@ cp -r /tmp/tyk-training/public /var/lib/instant-terminal/
 rm -rf /tmp/tyk-training
 
 # Set ownership
-sudo chown -R ubuntu:ubuntu /var/lib/instant-terminal
+chown -R ubuntu:ubuntu /var/lib/instant-terminal
 
 # Create systemd service
 cat > /etc/systemd/system/instant-terminal.service << 'SVC_EOF'
@@ -353,7 +353,7 @@ systemctl start instant-terminal
 systemctl restart nginx
 
 # Create local Kubernetes cluster with kind
-sudo -u ubuntu kind create cluster --name tyk-training --config - << 'EOF'
+su - ubuntu -c "kind create cluster --name tyk-training --config - << 'EOF'
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
@@ -372,19 +372,20 @@ nodes:
     hostPort: 8443
     protocol: TCP
 EOF
+"
 
 # Copy kubeconfig to training user
-sudo mkdir -p /home/training/.kube
-sudo cp /home/ubuntu/.kube/config /home/training/.kube/config
-sudo chown -R training:training /home/training/.kube
+mkdir -p /home/training/.kube
+cp /home/ubuntu/.kube/config /home/training/.kube/config
+chown -R training:training /home/training/.kube
 
 # Add Tyk Helm repository
-sudo -u ubuntu helm repo add tyk-helm https://helm.tyk.io/public/helm/charts/
-sudo -u ubuntu helm repo update
+su - ubuntu -c "helm repo add tyk-helm https://helm.tyk.io/public/helm/charts/"
+su - ubuntu -c "helm repo update"
 
 # Install NGINX Ingress Controller for Tyk
-sudo -u ubuntu kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
-sudo -u ubuntu kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s
+su - ubuntu -c "kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml"
+su - ubuntu -c "kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s"
 
 # Configure firewall
 ufw allow 22/tcp || true
