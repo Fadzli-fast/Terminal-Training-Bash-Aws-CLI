@@ -2,7 +2,8 @@
 
 A web-based terminal application designed for training environments, perfect for students to learn Tyk API Gateway deployment and management on AWS EC2.
 
-![Terminal Training Environment](https://github.com/user-attachments/assets/122b5f4f-da23-465f-b960-42962a876640)
+<img width="1704" height="933" alt="image" src="https://github.com/user-attachments/assets/c3d7bf1d-8207-4c80-bb3c-3437f740bc44" />
+
 
 ## Features
 
