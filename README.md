@@ -1,5 +1,5 @@
 # Terminal Training
-
+<img width="1716" height="768" alt="image" src="https://github.com/user-attachments/assets/122b5f4f-da23-465f-b960-42962a876640" />
 A web-based terminal application designed for training environments, perfect for students to learn Linux commands and deploy applications like Tyk Gateway on AWS EC2.
 
 ## Features
