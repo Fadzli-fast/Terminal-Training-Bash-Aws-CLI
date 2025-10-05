@@ -1,63 +1,152 @@
-# Terminal Training
-<img width="1716" height="768" alt="image" src="https://github.com/user-attachments/assets/122b5f4f-da23-465f-b960-42962a876640" />
-A web-based terminal application designed for training environments, perfect for students to learn Linux commands and deploy applications like Tyk Gateway on AWS EC2.
+# Tyk API Gateway Training Environment
+
+A web-based terminal application designed for training environments, perfect for students to learn Tyk API Gateway deployment and management on AWS EC2.
+
+![Terminal Training Environment](https://github.com/user-attachments/assets/122b5f4f-da23-465f-b960-42962a876640)
 
 ## Features
 
-- 🌐 Browser-based terminal interface using xterm.js
-- 🔌 Real-time WebSocket communication
-- 🐧 Full Linux shell access on EC2
-- 🚀 One-click EC2 deployment
-- 🔒 Secure and isolated training environment
+- 🌐 **Browser-based terminal interface** using xterm.js with split-screen layout
+- 📚 **Live Tyk documentation** embedded on the left panel
+- 🔌 **Real-time WebSocket communication** for seamless terminal experience
+- 🐧 **Full Linux shell access** on EC2 as `training` user
+- 🚀 **One-click multi-instance deployment** (1-10 instances configurable)
+- 🔒 **Secure training environment** with Basic HTTP Authentication
+- 🎯 **Tyk-specific setup** with proper sudo permissions for training
 
 ## Quick Deployment
 
-### 1. Launch EC2 Instance
-- Create Ubuntu 24.04 EC2 instance
-- Open ports 22 (SSH) and 80 (HTTP) in security groups
+### Prerequisites
+- AWS CLI configured with appropriate permissions
+- EC2 Key Pair in your target region
+- Node.js 18+ (for local development)
 
-### 2. Deploy Application
+### 1. Configure Deployment
+Edit the configuration in `deploy-tyk-training-clean.sh`:
 ```bash
-# Run deployment script
-./deploy.sh
-
-# Upload application files
-./upload-to-ec2.sh
+REGION="ap-southeast-1"                    # Your preferred AWS region
+KEY_PAIR_NAME="tyk_training_instance"      # Your existing EC2 key pair
+INSTANCE_TYPE="t3.medium"                  # EC2 instance type
+INSTANCE_COUNT=3                           # Number of instances (1-10)
 ```
 
-### 3. Access Terminal
-- Open browser to: `http://YOUR_EC2_IP`
-- Start using the terminal immediately!
+### 2. Deploy Training Environment
+```bash
+# Make script executable
+chmod +x deploy-tyk-training-clean.sh
+
+# Deploy to AWS (creates VPC, security groups, and EC2 instances)
+./deploy-tyk-training-clean.sh
+```
+
+### 3. Access Training Environment
+- Wait 2-3 minutes for full deployment
+- Open browser to any of the provided URLs
+- Login with: `training_user` / `training123`
+- Terminal automatically logs in as `training` user
+
+## Configuration Options
+
+### Instance Count
+Easily scale your training environment:
+```bash
+# For testing (1 instance)
+INSTANCE_COUNT=1
+
+# For small class (5 instances)  
+INSTANCE_COUNT=5
+
+# For large class (10 instances)
+INSTANCE_COUNT=10
+```
+
+### Instance Types
+Choose appropriate instance types:
+- `t3.small` - Basic training
+- `t3.medium` - Standard training (default)
+- `t3.large` - Advanced training with more resources
+
+## Training Features
+
+### 🎯 **Tyk-Specific Setup**
+- Pre-configured for Tyk API Gateway training
+- Live Tyk documentation embedded in the interface
+- Proper sudo permissions for Tyk installation and configuration
+- Isolated training user environment
+
+### 🔒 **Security Features**
+- Basic HTTP Authentication for web access
+- Training user with restricted sudo access
+- No root access for students
+- Secure WebSocket connections
+
+### 📚 **Learning Environment**
+- Split-screen layout: Documentation + Terminal
+- Auto-scroll terminal with manual controls
+- Professional terminal interface
+- Responsive design for different screen sizes
 
 ## Local Development
 
 ```bash
+# Install dependencies
 npm install
+
+# Start development server
 npm run dev
+
+# Access at http://localhost:3000
 ```
 
 ## Training Use Cases
 
-- Linux command training
-- Application deployment (Tyk Gateway, etc.)
-- Container management
-- Network configuration
-- File system operations
+- **Tyk API Gateway** installation and configuration
+- **Linux command training** and system administration
+- **Container management** with Docker
+- **Network configuration** and troubleshooting
+- **File system operations** and permissions
+- **Application deployment** and monitoring
+
+## Architecture
+
+The training environment includes:
+- **VPC** with public subnet for EC2 instances
+- **Security Groups** allowing SSH (22) and HTTP (80) access
+- **EC2 Instances** with Ubuntu 24.04 and Node.js
+- **Nginx** reverse proxy with WebSocket support
+- **Systemd service** for automatic application startup
+
+## Cleanup
+
+When training is complete, clean up AWS resources:
+```bash
+./cleanup-tyk-training.sh ap-southeast-1
+```
 
 ## Requirements
 
-- Node.js 18+
-- Ubuntu 24.04 (for EC2)
-- Nginx (auto-installed by deploy script)
+- **AWS CLI** configured with EC2 permissions
+- **EC2 Key Pair** in target region
+- **Ubuntu 24.04** AMI (auto-configured)
+- **Node.js 20+** (auto-installed on EC2)
+- **Nginx** (auto-installed and configured)
 
-## Security
+## Security Notes
 
-- Each student gets isolated EC2 instance
-- No local machine access required
-- Secure SSH-backed connections
-EOF
+- Each student gets an isolated EC2 instance
+- Training user has specific sudo permissions (no `sudo su`)
+- Web access protected by Basic HTTP Authentication
+- No local machine access required for students
+- All instances are in a dedicated VPC
 
-# Add and commit README
-git add README.md
-git commit -m "Add comprehensive README for training use"
-git push
+## Support
+
+For issues or questions:
+1. Check the deployment logs in AWS CloudFormation
+2. Verify EC2 instance status and systemd service
+3. Review Nginx configuration and logs
+4. Ensure security groups allow proper access
+
+## License
+
+This project is designed for educational and training purposes.
