@@ -8,9 +8,9 @@ set -e
 # Configuration
 REGION="ap-southeast-1"  # Change to your preferred region
 KEY_PAIR_NAME="tyk_training_instance"         # Set this to your existing key pair
-INSTANCE_TYPE="t3.medium"
+INSTANCE_TYPE="t3.small"
 AMI_ID="ami-09f03fa5572692399"  # Ubuntu 22.04 LTS
-INSTANCE_COUNT=10  # Number of instances to create (1-10)
+INSTANCE_COUNT=1  # Number of instances to create (1-10)
 SECURITY_GROUP_NAME="tyk-training-sg"
 VPC_CIDR="10.42.0.0/16"
 SUBNET_CIDR="10.42.1.0/24"
@@ -271,8 +271,6 @@ cat > public/index.html << 'HTML_EOF'
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tyk Training Terminal</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
     <style>
@@ -294,7 +292,46 @@ cat > public/index.html << 'HTML_EOF'
         padding: 14px 20px; background: #0e1422; border-bottom: 1px solid #1c2333;
       }
       .title { font-weight: 600; }
-      .content-area { position: relative; padding: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+      .header-controls {
+        margin-left: auto;
+        display: flex;
+        gap: 8px;
+      }
+      .panel-toggle {
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 500;
+        border: 1px solid #243049;
+        border-radius: 6px;
+        background: #18213c;
+        color: #dbe8ff;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .panel-toggle:hover {
+        background: #223055;
+        border-color: #2d3748;
+      }
+      .panel-toggle.active {
+        background: #1e40af;
+        border-color: #3b82f6;
+        color: white;
+      }
+      .panel-toggle:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .content-area { position: relative; padding: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; transition: all 0.3s ease; }
+      
+      /* Panel states */
+      .content-area.docs-only { grid-template-columns: 1fr 0; gap: 0; }
+      .content-area.terminal-only { grid-template-columns: 0 1fr; gap: 0; }
+      .content-area.split-view { grid-template-columns: 1fr 1fr; gap: 32px; }
+      
+      .panel-hidden { display: none !important; }
       
       /* Training content area */
       .training-content {
@@ -423,6 +460,17 @@ cat > public/index.html << 'HTML_EOF'
     <div class="page-wrapper">
       <header class="page">
         <div class="title">Tyk API Gateway Training Environment</div>
+        <div class="header-controls">
+          <button class="panel-toggle active" id="docsToggle">
+            📚 Docs
+          </button>
+          <button class="panel-toggle active" id="terminalToggle">
+            💻 Terminal
+          </button>
+          <button class="panel-toggle" id="splitToggle">
+            ⚙️ Split View
+          </button>
+        </div>
       </header>
 
       <div class="content-area">
@@ -566,6 +614,83 @@ cat > public/index.html << 'HTML_EOF'
 
       // Focus terminal when the window is clicked
       document.getElementById('tw').addEventListener('mousedown', () => term.focus());
+
+      // --- Panel Toggle Functionality ---
+      const contentArea = document.querySelector('.content-area');
+      const docsToggle = document.getElementById('docsToggle');
+      const terminalToggle = document.getElementById('terminalToggle');
+      const splitToggle = document.getElementById('splitToggle');
+      
+      let currentView = 'split'; // 'split', 'docs-only', 'terminal-only'
+      
+      function updateView(view) {
+        currentView = view;
+        
+        // Remove all classes
+        contentArea.classList.remove('split-view', 'docs-only', 'terminal-only');
+        
+        // Update button states
+        docsToggle.classList.remove('active');
+        terminalToggle.classList.remove('active');
+        splitToggle.classList.remove('active');
+        
+        // Apply new view
+        switch(view) {
+          case 'docs-only':
+            contentArea.classList.add('docs-only');
+            docsToggle.classList.add('active');
+            break;
+          case 'terminal-only':
+            contentArea.classList.add('terminal-only');
+            terminalToggle.classList.add('active');
+            break;
+          case 'split':
+          default:
+            contentArea.classList.add('split-view');
+            docsToggle.classList.add('active');
+            terminalToggle.classList.add('active');
+            splitToggle.classList.add('active');
+            break;
+        }
+        
+        // Trigger terminal resize
+        setTimeout(() => {
+          if (fitAddon) {
+            try { fitAddon.fit(); } catch(e) {}
+            if (ws && ws.readyState === 1) {
+              ws.send(JSON.stringify({ type: 'resize', data: { cols: term.cols, rows: term.rows } }));
+            }
+          }
+        }, 100);
+        
+        // Save preference
+        localStorage.setItem('panelView', view);
+      }
+      
+      // Load saved view
+      const savedView = localStorage.getItem('panelView') || 'split';
+      updateView(savedView);
+      
+      // Event listeners
+      docsToggle.addEventListener('click', () => {
+        if (currentView === 'docs-only') {
+          updateView('split');
+        } else {
+          updateView('docs-only');
+        }
+      });
+      
+      terminalToggle.addEventListener('click', () => {
+        if (currentView === 'terminal-only') {
+          updateView('split');
+        } else {
+          updateView('terminal-only');
+        }
+      });
+      
+      splitToggle.addEventListener('click', () => {
+        updateView('split');
+      });
     </script>
   </body>
 </html>
